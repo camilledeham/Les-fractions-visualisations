@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expert Fractions : Équivalences & Entiers</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; display: flex; flex-direction: column; align-items: center; padding: 15px; }
+        .card { background: white; padding: 1.5rem; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); max-width: 850px; width: 100%; }
+        h1 { color: #1e293b; font-size: 1.4rem; text-align: center; margin-bottom: 20px; }
+        
+        .grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 700px) { .grid-layout { grid-template-columns: 1fr; } }
+
+        .fraction-box { background: #f1f5f9; padding: 15px; border-radius: 15px; text-align: center; }
+        .frac-ui { font-size: 2.8rem; font-weight: bold; display: inline-block; vertical-align: middle; }
+        .line { height: 4px; background: #333; margin: 3px 0; }
+        
+        .stats { margin-top: 10px; font-weight: 600; color: #475569; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; margin-top: 5px; }
+        .inf { background: #dcfce7; color: #166534; }
+        .equ { background: #dbeafe; color: #1e40af; }
+        .sup { background: #fee2e2; color: #991b1b; }
+
+        .controls { margin-top: 15px; display: flex; flex-direction: column; gap: 10px; }
+        input[type=range] { width: 100%; cursor: pointer; }
+
+        #viz-area { display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 20px; min-height: 150px; }
+        .unit-shape { border: 2px solid #334155; background: #fff; position: relative; overflow: hidden; box-shadow: 2px 2px 5px rgba(0,0,0,0.05); }
+        .part { height: 100%; border-right: 0.1px solid rgba(0,0,0,0.1); }
+
+        .equiv-box { margin-top: 20px; padding: 15px; background: #fdf2f8; border-radius: 15px; border: 1px dashed #db2777; }
+        .equiv-title { color: #db2777; font-weight: bold; margin-bottom: 15px; font-size: 0.9rem; text-align: center; }
+        .equiv-list { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; align-items: center; }
+        .small-frac { display: flex; flex-direction: column; align-items: center; font-weight: bold; font-size: 1.2rem; }
+        .small-line { width: 22px; height: 2px; background: #333; margin: 2px 0; }
+        .entier-display { font-size: 1.8rem; color: #db2777; font-weight: 900; background: white; padding: 5px 15px; border-radius: 10px; border: 2px solid #db2777; }
+        .equal-sign { font-size: 1.5rem; font-weight: bold; color: #db2777; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>🍕 Expert Fractions : Visualisation & Quotients</h1>
+
+    <div class="grid-layout">
+        <div class="fraction-box">
+            <div class="frac-ui">
+                <div id="num-txt" style="color:#e11d48">4</div>
+                <div class="line"></div>
+                <div id="den-txt" style="color:#2563eb">2</div>
+            </div>
+            
+            <div class="stats">
+                <div>Décimal : <span id="val-dec">2.00</span></div>
+                <div>Pourcentage : <span id="val-per">200%</span></div>
+                <div id="type-badge" class="badge sup">...</div>
+            </div>
+
+            <div class="controls">
+                <label>Numérateur (Parts prises) : <b id="lbl-num">4</b></label>
+                <input type="range" id="rng-num" min="0" max="200" value="4">
+                
+                <label>Dénominateur (Découpage) : <b id="lbl-den">2</b></label>
+                <input type="range" id="rng-den" min="1" max="100" value="2">
+            </div>
+        </div>
+
+        <div id="viz-area"></div>
+    </div>
+
+    <div class="equiv-box">
+        <div class="equiv-title">🔗 Équivalences & Forme Entière :</div>
+        <div id="equiv-list" class="equiv-list"></div>
+    </div>
+    
+    <div style="margin-top:20px; padding:10px; background:#eff6ff; border-radius:10px; font-size:0.85rem; color:#1e40af; text-align: center;">
+        <b>🎓 Observation :</b> Si le numérateur est un multiple du dénominateur, la fraction est un <b>nombre entier</b> !
+    </div>
+</div>
+
+<script>
+    const rngNum = document.getElementById('rng-num');
+    const rngDen = document.getElementById('rng-den');
+    const viz = document.getElementById('viz-area');
+    const equivList = document.getElementById('equiv-list');
+
+    function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+
+    function update() {
+        const n = parseInt(rngNum.value);
+        const d = parseInt(rngDen.value);
+        
+        document.getElementById('num-txt').innerText = n;
+        document.getElementById('den-txt').innerText = d;
+        document.getElementById('lbl-num').innerText = n;
+        document.getElementById('lbl-den').innerText = d;
+        
+        const ratio = n / d;
+        document.getElementById('val-dec').innerText = ratio.toFixed(2);
+        document.getElementById('val-per').innerText = Math.round(ratio * 100) + "%";
+
+        const badge = document.getElementById('type-badge');
+        if (ratio < 1) { badge.innerText = "Inférieure à l'unité"; badge.className = "badge inf"; }
+        else if (ratio === 1) { badge.innerText = "Égale à l'unité"; badge.className = "badge equ"; }
+        else { badge.innerText = "Supérieure à l'unité"; badge.className = "badge sup"; }
+
+        // Rendu Visuel
+        viz.innerHTML = "";
+        const nbUnites = Math.ceil(n / d) || 1;
+        for (let u = 0; u < nbUnites; u++) {
+            const container = document.createElement('div');
+            container.className = "unit-shape";
+            container.style.width = "180px";
+            container.style.height = "45px";
+            container.style.display = "flex";
+            for (let p = 0; p < d; p++) {
+                const part = document.createElement('div');
+                part.className = "part";
+                part.style.flex = "1";
+                const currentPartIndex = (u * d) + p;
+                if (currentPartIndex < n) part.style.background = "#fbbf24";
+                if (d > 50) part.style.borderRight = "none";
+                container.appendChild(part);
+            }
+            viz.appendChild(container);
+        }
+
+        // Calcul des Équivalences et Entiers
+        equivList.innerHTML = "";
+        
+        // 1. Affichage de l'entier si c'est un quotient exact
+        if (n % d === 0) {
+            const res = n / d;
+            equivList.innerHTML += `<div class="entier-display">${res}</div>`;
+            if (n !== 0) equivList.innerHTML += `<div class="equal-sign">=</div>`;
+        }
+
+        const commonDiv = gcd(n, d);
+        const simplifiedN = n / commonDiv;
+        const simplifiedD = d / commonDiv;
+
+        let equivalents = [];
+        equivalents.push({n: simplifiedN, d: simplifiedD});
+
+        [2, 3, 5, 10].forEach(m => {
+            let multN = simplifiedN * m;
+            let multD = simplifiedD * m;
+            if (multD <= 100 && multD !== d) equivalents.push({n: multN, d: multD});
+        });
+
+        const uniqueEquivs = equivalents
+            .filter((v, i, a) => a.findIndex(t => (t.n === v.n && t.d === v.d)) === i)
+            .sort((a, b) => a.d - b.d);
+
+        uniqueEquivs.forEach((eq, idx) => {
+            const item = document.createElement('div');
+            item.className = "small-frac";
+            item.innerHTML = `<div>${eq.n}</div><div class="small-line"></div><div>${eq.d}</div>`;
+            if (eq.d === d) item.style.color = "#db2777";
+            equivList.appendChild(item);
+            if (idx < uniqueEquivs.length - 1) {
+                const eqSign = document.createElement('div');
+                eqSign.className = "equal-sign";
+                eqSign.innerText = "=";
+                equivList.appendChild(eqSign);
+            }
+        });
+    }
+
+    rngNum.addEventListener('input', update);
+    rngDen.addEventListener('input', update);
+    update();
+</script>
+</body>
+</html>
